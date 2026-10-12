@@ -108,6 +108,8 @@ their own.
 - **Select:** the chosen option and its tick. **Remote:** the power key and the chosen activity.
 - **Vacuum:** the chips of its rows and its state line.
 - **Timer and sun:** their words.
+- **Plant:** each reading's value and its colour, and the species. Which readings it has, their icons, and whether
+  they stand two to a row are its shape, so a value that no longer fits beside the other column builds it again.
 - **Every card's status line** under the name.
 
 - **Lock and alarm:** their status line; everything else is their shape (see "Security cards").

@@ -352,6 +352,8 @@ inline constexpr Named NAMES[] = {
   {"power-sleep", 0xF0904},
   {"refresh-auto", 0xF18F2},
   {"rocket-launch", 0xF14DE},
+  {"counter", 0xF0199},
+  {"white-balance-sunny", 0xF05A8},
 };
 inline constexpr size_t NAME_COUNT = sizeof(NAMES) / sizeof(NAMES[0]);
 // Codepoint of a name the fonts carry; 0 for any other name.

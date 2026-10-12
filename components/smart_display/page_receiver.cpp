@@ -992,6 +992,25 @@ std::string receive(const std::string &payload) {
       e->home_name = string(extra["n"], 32);
       next.energy = std::move(e);
     }
+    // A plant (firmware 0.56.0+): its readings, each its icon, its value as Home Assistant shows it, its unit and whether
+    // the plant says it is too low or too high, and its species (core.plant_extras), for Home Assistant's own plant and
+    // Olen's alike.
+    if (tile.domain() == "plant" && (extra["r"].is<JsonArray>() || extra["sp"].is<const char *>())) {
+      auto p = std::make_shared<plant_card::Data>();
+      if (extra["r"].is<JsonArray>()) for (JsonVariant r : extra["r"].as<JsonArray>()) {
+        if (p->readings.size() == plant_card::MAX_READINGS) break;
+        plant_card::Reading reading;
+        const uint32_t icon = tile_icon::codepoint(string(r["i"], 8));
+        reading.icon = icon && has_icon_glyph(icon) ? icon : 0;
+        reading.value = string(r["v"], 16);
+        reading.unit = string(r["u"], 16);
+        const std::string status = string(r["s"], 1);
+        reading.status = status == "l" || status == "h" ? status[0] : 0;
+        p->readings.push_back(std::move(reading));
+      }
+      p->species = string(extra["sp"], 48);
+      next.plant = std::move(p);
+    }
     // An alarm panel (app 0.3.8+, firmware 0.3.3+): how it takes codes, who changed it, and a delay's end.
     if (tile.domain() == "alarm_control_panel") {
       next.code_format = string(a["code_format"], 8);

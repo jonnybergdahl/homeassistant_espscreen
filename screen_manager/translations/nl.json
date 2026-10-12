@@ -1725,7 +1725,8 @@
         "screen": "Scherm",
         "alarm_control_panel": "Alarm",
         "lock": "Sloten",
-        "humidifier": "Luchtbevochtigers"
+        "humidifier": "Luchtbevochtigers",
+        "plant": "Planten"
       },
       "room": "Ruimte",
       "hide_placed": "Geplaatste verbergen",
@@ -1788,7 +1789,8 @@
       "entity": "Entiteit",
       "alarm_control_panel": "Alarmpaneel",
       "lock": "Slot",
-      "humidifier": "Luchtbevochtiger"
+      "humidifier": "Luchtbevochtiger",
+      "plant": "Plant"
     },
     "displays": {
       "standard": "standaard",

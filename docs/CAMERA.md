@@ -71,6 +71,17 @@ what plays, with the title, the artist and the album, a progress bar and the key
   over a whole page on a kept page has its next cover fetched ahead while the screen is in use, after everything on
   the glass.
 
+## A plant's photo
+
+A plant's card (firmware 0.56.0) shows the plant's photo above its readings, the picture Home Assistant gives the plant
+(`entity_picture`): a file in Home Assistant such as `/local/fern.jpg`, or a picture on the internet, such as the one
+OpenPlantbook gives the custom plant integration for a species. It goes the cover's way: the state carries a short mark
+of the address, the card asks for the photo at the size it draws it with the card's colour behind the rounded corners,
+and the app cuts it square. The app fetches a file in Home Assistant with its own access and a picture on the internet
+only from a public address, without following a redirect, as it fetches a person's photo for a map. Until the photo is
+here, and on a board without camera pictures, the card shows the plant's icon in its place or leaves the room to the
+readings.
+
 ## A live picture on a camera tile
 
 App 0.2.91 with firmware 0.2.77 puts the camera on the tile itself: **Display → Live picture** in the

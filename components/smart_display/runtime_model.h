@@ -11,6 +11,7 @@
 #include "page_protocol.h"
 #include "optimistic.h"
 #include "energy_card.h"
+#include "plant_card.h"
 #include <cmath>
 #include <cstdint>
 #include <cstdlib>
@@ -308,6 +309,8 @@ struct Extra {
   std::string map_mark;
   // The energy card's moment (firmware 0.47.0+): its own block, so no other tile's extras grow by it.
   std::shared_ptr<const energy_card::Data> energy;
+  // A plant's readings and species (firmware 0.56.0+): its own block, as the energy card's.
+  std::shared_ptr<const plant_card::Data> plant;
   uint32_t media_duration = 0, media_position = 0, media_position_at = 0;
   // More of a media player (firmware 0.24.0+, app 0.4.42+): the speaker it plays on and the ones it may (source_list,
   // sixteen at most), shuffle (-1 for a player without it) and repeat ("" without it), the features it reported at its
@@ -383,7 +386,7 @@ struct Extra {
            media_source.empty() && media_repeat.empty() && media_sources.empty() && media_shuffle < 0 && !media_features &&
            speaker_flags.empty() && speaker_volumes.empty() && media_inputs.empty() && media_input.empty() && media_target.empty() &&
            !has_ground && !ground_known && !media_library && fav_kind.empty() && fav_source.empty() && fav_mark.empty() &&
-           fav_glyph.empty() && !fav_playing && !energy && plugin_options.empty() && plugin_state.empty() && plugin_entity.empty();
+           fav_glyph.empty() && !fav_playing && !energy && !plant && plugin_options.empty() && plugin_state.empty() && plugin_entity.empty();
   }
 };
 // The numbers of a clock text ("0:05:00", "07:45"), at most `max` of them, each after optional white space, up to the
@@ -684,6 +687,8 @@ struct Tile {
     // Home Assistant calls every lock that is not locked active (state_active.ts); a locked one still has a colour
     // of its own, green (lock_panel::color), where other inactive things are grey.
     if (d == "lock") return state != "locked";
+    // A plant is active only while it has a problem (state_active.ts, firmware 0.56.0+).
+    if (d == "plant") return state == "problem";
     return true;
   }
   // A slider shows the card's colour like Home Assistant's tile sliders: grey only while the entity is inactive

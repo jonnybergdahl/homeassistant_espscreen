@@ -413,6 +413,10 @@ HA_DEFAULTS = (
     ('power-sleep', 'F0904'),
     ('refresh-auto', 'F18F2'),
     ('rocket-launch', 'F14DE'),
+    # A plant's readings (firmware 0.56.0+): Home Assistant's brightness on its plant-status card, and the daily light
+    # integral of Olen's plant; the others are in the set already (core.PLANT_READINGS).
+    ('counter', 'F0199'),
+    ('white-balance-sunny', 'F05A8'),
 )
 
 # Pickable icons by name, and every glyph the firmware fonts contain.
@@ -422,7 +426,7 @@ GLYPHS = {**{name: codepoint for name, (codepoint, _) in ICONS.items()}, **dict(
 # Mirrors runtime_tiles::icon_for() so the editor mockup shows what the screen draws.
 DEFAULTS = {'light': 'lightbulb', 'climate': 'air-conditioner', 'humidifier': 'air-humidifier', 'vacuum': 'robot-vacuum', 'fan': 'fan',
             'cover': 'window-shutter', 'scene': 'sofa', 'script': 'sofa', 'automation': 'robot', 'remote': 'remote', 'sensor': 'gauge', 'binary_sensor': 'gauge',
-            'timer': 'timer-outline', 'person': 'account', 'camera': 'cctv', 'image': 'cctv', 'screen': 'clock-outline'}
+            'timer': 'timer-outline', 'person': 'account', 'camera': 'cctv', 'image': 'cctv', 'plant': 'flower', 'screen': 'clock-outline'}
 # The cards the screen brings itself: one icon per entity, not per domain.
 BUILTIN_TILES = {'screen.clock': 'clock-outline', 'screen.settings': 'cog', 'screen.map': 'map-marker', **{f'screen.page_{n}': 'arrow-right' for n in range(1, 9)}}
 # The energy card's icon (app 0.4.77), Home Assistant's Energy panel's: never drawn big, since the card is its diagram on

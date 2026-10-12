@@ -2228,6 +2228,141 @@ def cover_related(entity, device, states):
     Motionblinds report the battery there."""
     return {role: eid for role, eid in vacuum_related(entity, device, states).items() if role in ('battery', 'charging')}
 
+# ----- Plants (firmware 0.56.0+) -----
+# Two integrations share the plant domain. Home Assistant's own (homeassistant/components/plant) keeps each reading in an
+# attribute of the plant, its unit in unit_of_measurement_dict and what is wrong in `problem` ("moisture low,
+# conductivity high"). Olen's replacement (github.com/Olen/homeassistant-plant) keeps each reading in a sensor of the
+# plant's device, found by its translation key (moisture, illuminance), and says Low or High per reading in
+# `<reading>_status`. Its min and max numbers there are the plant's settings, not readings, and stay out. The card shows
+# each reading with its icon and value, red while it is too low or too high, in the order and with the icons of each
+# one's own card: Home Assistant's plant-status card for its own plant (hui-plant-status-card.ts), the flower card's
+# default bars for Olen's (lovelace-flower-card, default_show_bars, so its CO2, soil temperature and VPD stay out too).
+# Olen's icons are its sensors' own; its conductivity (spa-outline) is drawn with Home Assistant's sprout, so the 4 MB
+# boards carry one glyph less.
+PLANT_CORE_READINGS = (('moisture', 'water-percent'), ('temperature', 'thermometer'), ('brightness', 'white-balance-sunny'),
+                       ('conductivity', 'sprout'), ('battery', 'battery'))
+PLANT_READINGS = (('moisture', 'water'), ('conductivity', 'sprout'), ('temperature', 'thermometer'),
+                  ('illuminance', 'brightness-6'), ('humidity', 'water-percent'), ('dli', 'counter'))
+# Home Assistant's battery icon by tens (battery_icon.ts, batteryLevelIcon): a reading of a plant's own battery.
+PLANT_BATTERY_ICONS = ('battery-outline', 'battery-10', 'battery-20', 'battery-30', 'battery-40', 'battery-50',
+                       'battery-60', 'battery-70', 'battery-80', 'battery-90', 'battery')
+PLANT_MAX_READINGS = 8
+
+def plant_related(entity, device, states):
+    """The sensors of the readings on the device of Olen's plant (firmware 0.56.0+), {reading: sensor} by translation
+    key. Home Assistant's own plant has no device and gets nothing here: its readings are its attributes."""
+    keys = {key for key, _ in PLANT_READINGS}
+    found = {}
+    for item in device or ():
+        eid = item.get('entity_id') or ''
+        if eid == entity or item.get('disabled_by') or item.get('platform') not in (None, 'plant'):
+            continue
+        # Its translation key, else the end of its unique id (<entry>-current-moisture, <entry>-dli). A reading the plant
+        # has no sensor for is disabled by the integration and has no state: it stays out.
+        key = item.get('translation_key') or ''
+        if key not in keys:
+            unique = item.get('unique_id') or ''
+            key = 'dli' if unique.endswith('-dli') else next((k for k in keys if unique.endswith('-current-' + k)), '')
+        if key in keys and eid.startswith('sensor.') and key not in found and eid in states:
+            found[key] = eid
+    return found
+
+def plant_picture(attrs):
+    """The address of a plant's photo (firmware 0.56.0+): its entity_picture, a file in Home Assistant (/local/...) or a
+    picture on the internet (OpenPlantbook's, which Olen's plant takes), or '' without one."""
+    picture = attrs.get('entity_picture')
+    return picture if isinstance(picture, str) and picture else ''
+
+def plant_battery_icon(level):
+    """Home Assistant's battery icon for a level in percent, the full battery without one."""
+    import header_bar
+    number = header_bar.numeric(level)
+    return 'battery' if number is None else PLANT_BATTERY_ICONS[max(0, min(10, int(number // 10)))]
+
+def plant_extras(tile, states, device=None, entries=None):
+    """The plant card's readings (firmware 0.56.0+): `r`, at most eight, each its icon `i` (a codepoint), its value `v` as
+    Home Assistant shows it (left out while it has none), its unit `u` and `s`, `l` or `h` while the plant reports it
+    too low or too high; the species `sp`; and `pic`, a short mark of its photo, as a media player's cover has
+    (media_extras): the screen asks for the photo itself, again only when the mark changes."""
+    import header_bar
+    entity = tile['entity']
+    attrs = states.get(entity, {}).get('attributes', {})
+    entries = entries or {}
+    related = plant_related(entity, device, states)
+    readings = []
+    def value(raw, eid):
+        if raw is None or (isinstance(raw, str) and raw in ('', 'unknown', 'unavailable')):
+            return None
+        number = header_bar.numeric(raw)
+        if number is None:
+            return short(str(raw), 16)
+        rounded = rounded_state(str(raw), header_bar.precision_of(entries.get(eid)))
+        return short(rounded, 16)
+    def glyph(icon):
+        code = tile_icons.GLYPHS.get(icon)
+        return code if code else None
+    def drawable(text):
+        # In the letters the screen has: Olen's light integral is mol/d⋅m², whose dot operator the fonts lack, and
+        # dropped it would read as another unit; the middle dot is the same word.
+        return header_bar.clean_text(text.replace('\u22c5', '·')) if isinstance(text, str) else ''
+    if related:
+        for key, icon in PLANT_READINGS:
+            eid = related.get(key)
+            if not eid:
+                continue
+            state = states.get(eid) or {}
+            sensor = state.get('attributes') or {}
+            entry = entries.get(eid) or {}
+            # The sensor's own icon, which its owner may have changed, as the flower card shows it; else Olen's.
+            own = entry.get('icon') or sensor.get('icon')
+            own = own[4:] if isinstance(own, str) and own.startswith('mdi:') else None
+            item = {'i': glyph(own) or glyph(icon)}
+            shown = value(state.get('state'), eid)
+            if shown is not None:
+                item['v'] = shown
+            unit = drawable(sensor.get('unit_of_measurement'))
+            if unit:
+                item['u'] = short(unit, 16)
+            status = attrs.get(f'{key}_status')
+            if isinstance(status, str) and status.endswith(('Low', 'High')):
+                item['s'] = 'l' if status.endswith('Low') else 'h'
+            readings.append(item)
+    else:
+        problem = attrs.get('problem') if isinstance(attrs.get('problem'), str) else ''
+        units = attrs.get('unit_of_measurement_dict') if isinstance(attrs.get('unit_of_measurement_dict'), dict) else {}
+        sensors = attrs.get('sensors') if isinstance(attrs.get('sensors'), dict) else {}
+        for key, icon in PLANT_CORE_READINGS:
+            if key not in attrs:
+                continue
+            raw = attrs.get(key)
+            if key == 'battery':
+                icon = plant_battery_icon(raw)
+            item = {'i': glyph(icon)}
+            # Its sensor's state as Home Assistant shows it, with that sensor's precision (_formatSensorValue).
+            eid = sensors.get(key) if isinstance(sensors.get(key), str) else None
+            sensor = states.get(eid) if eid else None
+            shown = value(sensor.get('state') if sensor else raw, eid)
+            if shown is not None:
+                item['v'] = shown
+            unit = drawable(units.get(key))
+            if unit:
+                item['u'] = short(unit, 16)
+            if f'{key} low' in problem:
+                item['s'] = 'l'
+            elif f'{key} high' in problem:
+                item['s'] = 'h'
+            readings.append(item)
+    result = {}
+    if readings:
+        result['r'] = [{k: v for k, v in item.items() if v is not None} for item in readings[:PLANT_MAX_READINGS]]
+    species = drawable(attrs.get('species'))
+    if species:
+        result['sp'] = short(species, 48)
+    picture = plant_picture(attrs)
+    if picture:
+        result['pic'] = hashlib.sha1(picture.encode()).hexdigest()[:10]
+    return result or None
+
 def vacuum_extras(tile, states, device):
     """The vacuum card's rows and details: the mode and water selects (`e` entity, `s` state, `o` options,
     `l` labels, `r` a role per mode), the suction speeds to offer (`fan`), the battery (`bat`), charging
@@ -2335,6 +2470,8 @@ def extras(tile, states, forecast=None, tz=None, hourly=None, now=None, device=N
         return device_power(attrs, cover_related(tile['entity'], device, states), states) or None
     if domain == 'media_player':
         return media_extras(attrs)
+    if domain == 'plant':
+        return plant_extras(tile, states, device, entries)
     if domain == 'weather' and (forecast or hourly):
         result = {}
         days = []

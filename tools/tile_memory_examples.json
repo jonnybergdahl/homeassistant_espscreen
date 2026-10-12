@@ -396,6 +396,34 @@
    "source": "device_tracker.phone_of_someone"
   }
  },
+ "plant": {
+  "entity": "plant.living_room_fiddle_leaf_fig_by_the_window",
+  "state": "problem",
+  "attributes": {
+   "friendly_name": "Living Room Fiddle Leaf Fig By The Window",
+   "problem": "moisture low, conductivity high, brightness low",
+   "sensors": {
+    "moisture": "sensor.fig_moisture",
+    "temperature": "sensor.fig_temperature",
+    "conductivity": "sensor.fig_conductivity",
+    "brightness": "sensor.fig_illuminance",
+    "battery": "sensor.fig_battery"
+   },
+   "unit_of_measurement_dict": {
+    "moisture": "%",
+    "temperature": "°C",
+    "conductivity": "µS/cm",
+    "brightness": "lx",
+    "battery": "%"
+   },
+   "moisture": 12.5,
+   "temperature": 21.4,
+   "conductivity": 3400,
+   "brightness": 15300,
+   "battery": 47,
+   "max_brightness": 21000
+  }
+ },
  "remote": {
   "entity": "remote.living_room_floor_lamp_left",
   "state": "on",

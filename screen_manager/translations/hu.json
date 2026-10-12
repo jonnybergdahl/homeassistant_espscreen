@@ -1726,7 +1726,8 @@
         "screen": "Kijelző",
         "alarm_control_panel": "Riasztó",
         "lock": "Zárak",
-        "humidifier": "Párásítók"
+        "humidifier": "Párásítók",
+        "plant": "Növények"
       },
       "room": "Helyiség",
       "hide_placed": "Elhelyezettek elrejtése",
@@ -2149,7 +2150,8 @@
       "entity": "Entitás",
       "alarm_control_panel": "Riasztópanel",
       "lock": "Zár",
-      "humidifier": "Párásító"
+      "humidifier": "Párásító",
+      "plant": "Növény"
     },
     "displays": {
       "standard": "normál",

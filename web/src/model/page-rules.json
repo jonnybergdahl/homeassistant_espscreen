@@ -19,6 +19,7 @@
     "media_player",
     "number",
     "person",
+    "plant",
     "remote",
     "scene",
     "script",
@@ -53,6 +54,7 @@
     "media_player",
     "number",
     "person",
+    "plant",
     "remote",
     "scene",
     "script",
@@ -123,6 +125,9 @@
       "standard",
       "watch",
       "map"
+    ],
+    "plant": [
+      "standard"
     ],
     "screen": [
       "digital",
@@ -442,6 +447,7 @@
     "media_player",
     "number",
     "person",
+    "plant",
     "remote",
     "scene",
     "script",

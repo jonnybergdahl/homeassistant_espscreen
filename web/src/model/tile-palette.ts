@@ -33,6 +33,8 @@ export function tileActive(entity: string, value: Value, runs = false) {
   if (domain === "camera") return ["streaming", "recording"].includes(state);
   if (domain === "alarm_control_panel") return state !== "disarmed";
   if (domain === "lock") return state !== "locked";
+  // A plant only while it has a problem (Tile::active, firmware 0.56.0+).
+  if (domain === "plant") return state === "problem";
   return true;
 }
 /** LVGL's lv_color_hsv_to_rgb step for step (tile_controls::hsv_rgb), so a lamp's colour is the screen's to the last bit. */
@@ -65,6 +67,8 @@ export function accent(entity: string, value: Value) {
   if (domain === "fan") return c.CYAN;
   // A humidifier is Home Assistant's blue while it is on (--state-humidifier-on-color), drying or humidifying alike.
   if (domain === "humidifier") return c.BLUE;
+  // A plant with a problem is Home Assistant's red (--state-plant-active-color, firmware 0.56.0+).
+  if (domain === "plant") return c.RED;
   if (["cover", "scene"].includes(domain)) return c.PURPLE;
   if (domain === "media_player") return c.LIGHT_BLUE;
   if (["select", "input_select"].includes(domain)) return c.INDIGO;

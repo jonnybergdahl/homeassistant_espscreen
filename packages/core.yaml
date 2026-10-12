@@ -1319,6 +1319,8 @@ font:
       - "\U000F0904" # power-sleep
       - "\U000F18F2" # refresh-auto
       - "\U000F14DE" # rocket-launch
+      - "\U000F0199" # counter
+      - "\U000F05A8" # white-balance-sunny
 
   - file: "${FONT_DIR}/materialdesignicons-webfont.ttf"
     id: materialdesign_icons_mini
@@ -1366,6 +1368,7 @@ font:
       - "\U000F051B" # timer-outline
       - "\U000F0004" # account
       - "\U000F07AE" # cctv
+      - "\U000F024A" # flower
       - "\U000F0150" # clock-outline
       - "\U000F0493" # cog
       - "\U000F034E" # map-marker

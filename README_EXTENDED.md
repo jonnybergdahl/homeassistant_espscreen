@@ -82,7 +82,7 @@ on the screen itself, and how updates work.
   small panel with just those sliders; touching anywhere beside the panel closes
   it. A group with more lamps than fit on the glass is paged, the same way as the
   tile pages.
-- **More cards:** climate, humidifiers and dehumidifiers, vacuum, fan, cover, media player, sensors,
+- **More cards:** climate, humidifiers and dehumidifiers, plants, vacuum, fan, cover, media player, sensors,
   select/input_select, number/input_number, switches, scenes, scripts, and
   buttons.
 - **Special cards (firmware 0.2.14+):** a **clock** (digital or analog)
@@ -215,6 +215,12 @@ on the screen itself, and how updates work.
   the humidity now ("Drying · 68%"); the card has the target humidity in Home Assistant's ring between − / +
   keys, the power key and its modes, as icons where Home Assistant names them and as words where the
   integration has its own. A double-width tile takes − / +, a slider, the mode keys or an on/off switch.
+- **Plants** (firmware 0.56.0), from Home Assistant's own plant integration or from the custom
+  [plant integration](https://github.com/Olen/homeassistant-plant) that replaces it. The tile says OK or Problem
+  and turns red while the plant has a problem. A tap opens its card: the species and the readings the plant has a
+  sensor for (soil moisture, conductivity, temperature, light, air humidity and the daily light integral, or the
+  plant's battery), each with its icon and value, the value red while the plant says it is too low or too high, and
+  the plant's photo above them on a screen that shows camera pictures.
 - **Weather tile** (firmware 0.3.3): the weather now in its colour, then the coming days with the
   high in bold, the low in grey and the chance of rain in blue when it matters; today stands on a pill.
   A tile of two rows lists the days under each other with the week's range as coloured bars.

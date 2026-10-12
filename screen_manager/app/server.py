@@ -40,7 +40,7 @@ import entity_settings
 import plugins
 
 from aiohttp import ClientError, ClientSession, ClientTimeout, WSMsgType, web
-from core import alarm_extras, lock_extras, ALERT_EVENT, board_of, BROADCAST_EVENTS, BROADCAST_SHOW, BUILTIN, CAMERA_DOMAINS, entity_id, SETTINGS_BESIDE_BLOCK, TILE_EVENTS, TILE_RESULT_EVENT, layout_snapshot, match_screen, HEADER_MIN_FIRMWARE, NAME_TILE_SETTINGS, TRANSPORT_MIN_FIRMWARE, alert_action, alert_camera, alert_choice, alert_data, choice_service, ALERT_CHOICE_ACTION, ALERT_CHOICE_MIN_FIRMWARE, parse_firmware, alert_reference, alert_screen_choice, alert_screen_names, alert_service, alert_targets, backgrounds, builtin_name, controls_catalogue, device_prefixes, discover, discover_screens, encode, entity_slug, extras, media_cover, media_extras, forecast_kinds, header_items, inbox_prefix, message_action, min_firmware, name_clash, packets, revision, screen_items, state_message, validate_header, validate_layout, validate_settings
+from core import alarm_extras, lock_extras, plant_picture, ALERT_EVENT, board_of, BROADCAST_EVENTS, BROADCAST_SHOW, BUILTIN, CAMERA_DOMAINS, entity_id, SETTINGS_BESIDE_BLOCK, TILE_EVENTS, TILE_RESULT_EVENT, layout_snapshot, match_screen, HEADER_MIN_FIRMWARE, NAME_TILE_SETTINGS, TRANSPORT_MIN_FIRMWARE, alert_action, alert_camera, alert_choice, alert_data, choice_service, ALERT_CHOICE_ACTION, ALERT_CHOICE_MIN_FIRMWARE, parse_firmware, alert_reference, alert_screen_choice, alert_screen_names, alert_service, alert_targets, backgrounds, builtin_name, controls_catalogue, device_prefixes, discover, discover_screens, encode, entity_slug, extras, media_cover, media_extras, forecast_kinds, header_items, inbox_prefix, message_action, min_firmware, name_clash, packets, revision, screen_items, state_message, validate_header, validate_layout, validate_settings
 from core import ENERGY_TILE, MAP_TILE_MIN_FIRMWARE, WEATHER_WEEK, calibrate_entity, can_standby, dimmable, SETTING_ENTITIES, SETTING_RULES, STANDBY_KEYS, setting_action, setting_entities, setting_from_state, state_word
 from core import BOARD_KEYS, has_battery, is_key, drawn_controls, FAVORITE_KINDS, SCREENSAVER_MIN_FIRMWARE, short, plugin_tile
 from core import (FIRMWARE_MAX_BAR_ITEMS, FIRMWARE_MAX_PAGES, FIRMWARE_MAX_TILES, Grid, page_target, PAGE_TILE_REPEAT_MIN_FIRMWARE, ENTITY_REPEAT_MIN_FIRMWARE, ROTATION_MIN_FIRMWARE, SHAPES, firmware_features, grid_of, orientation_at,
@@ -942,8 +942,7 @@ class Manager:
         # Camera images (firmware 0.2.57+): the feed behind the camera port, and the cameras of recent alerts
         # (entity -> monotonic time) that a screen may open full screen without a tile.
         self.camera = camera_feed.CameraFeed(lambda entity: self.ha.camera_image(entity),
-                                             fetch_cover=lambda entity: self.ha.media_image(self.followed(entity)),
-                                             picture=lambda entity: self.ha.media_picture(self.followed(entity)))
+                                             fetch_cover=self.cover_image, picture=self.cover_picture)
         self.alert_cameras = {}
         # A camera live, full screen, on a P4 (live_feed.py): its links and the sources behind them, on the camera port.
         self.live = live_feed.LiveFeed(lambda entity: self.ha.camera_image(entity), lambda: self.ha.websocket(),
@@ -1924,6 +1923,23 @@ class Manager:
             self.outputs.pop(entity, None)
         return found
 
+    def cover_picture(self, entity):
+        """The address of the picture a card shows as its cover: a player's (the speaker it follows), or a plant's photo
+        (firmware 0.56.0+)."""
+        if entity.startswith('plant.'):
+            return plant_picture((self.ha.states.get(entity) or {}).get('attributes') or {})
+        return self.ha.media_picture(self.followed(entity))
+
+    async def cover_image(self, entity):
+        """That picture's bytes: a player's through its proxy (media_image), a plant's from Home Assistant or the internet
+        as a person's photo on a map is (entity_picture: never a private address, never a redirect)."""
+        if entity.startswith('plant.'):
+            picture = self.cover_picture(entity)
+            if not picture:
+                raise ValueError('no picture')
+            return await self.ha.entity_picture(picture)
+        return await self.ha.media_image(self.followed(entity))
+
     def followed(self, entity):
         """The player a card shows: the speaker it follows (speakers.target_of), or the player itself."""
         return speakers.target_of(entity, self.ha.states, self.outputs.get(entity)) or entity
@@ -2296,8 +2312,8 @@ class Manager:
 
     def related_entities(self, tile):
         """Entities a card reads besides its own: a vacuum's cleaning mode and water selects and its battery sensor, a
-        cover's battery sensor."""
-        from core import cover_related, vacuum_related
+        cover's battery sensor, the sensors of a plant's readings."""
+        from core import cover_related, plant_related, vacuum_related
         # A plugin tile that belongs to an entity (docs/PLUGINS.md) is sent again when that entity changes.
         if plugin_tile(tile['entity']):
             entity = (tile.get('options') or {}).get('plugin_entity')
@@ -2306,6 +2322,9 @@ class Manager:
             return tuple(vacuum_related(tile['entity'], self.device_entries(tile['entity']), self.ha.states).values())
         if tile['entity'].startswith('cover.'):
             return tuple(cover_related(tile['entity'], self.device_entries(tile['entity']), self.ha.states).values())
+        # Olen's plant (firmware 0.56.0): the sensors of its readings, on its device.
+        if tile['entity'].startswith('plant.'):
+            return tuple(plant_related(tile['entity'], self.device_entries(tile['entity']), self.ha.states).values())
         # A map (app 0.4.33) is drawn from everyone on it and the zones around them: a move or a zone's edit reaches
         # its movement mark only through this.
         if (tile.get('options') or {}).get('display') == 'map':
@@ -2613,8 +2632,9 @@ class Manager:
             forecast=await self.cached(self.forecasts, entity, FORECAST_SECONDS, (lambda: self.ha.forecast(entity)) if 'daily' in kinds else nothing)
             # Hourly forecasts feed the weather card's next-hours strip (0.2.23+); refreshed every half hour.
             hourly=await self.cached(self.forecasts, (entity,'hourly'), FORECAST_SECONDS, (lambda: self.ha.forecast(entity,'hourly')) if 'hourly' in kinds else nothing)
-        # A vacuum's card also reads selects and the battery sensor of its device (app 0.2.46), a cover's card its battery (0.2.58).
-        device=self.device_entries(tile['entity']) if tile['entity'].startswith(('vacuum.', 'cover.', 'light.')) else None
+        # A vacuum's card also reads selects and the battery sensor of its device (app 0.2.46), a cover's card its battery (0.2.58),
+        # and Olen's plant the sensors of its readings (firmware 0.56.0).
+        device=self.device_entries(tile['entity']) if tile['entity'].startswith(('vacuum.', 'cover.', 'light.', 'plant.')) else None
         entry=self.registry_index().get(tile['entity'])
         # A player's speakers and inputs (speakers.py), to a screen that draws them; a player that plays on a speaker of
         # its library through this app shows that speaker, under its own name.
@@ -2631,6 +2651,8 @@ class Manager:
             tile={**tile,'name':options['play'].get('title') or ''}
         # A light's effects page (app 0.2.83) names the device's selects and numbers as Home Assistant does, with its icons.
         light=tile['entity'].startswith('light.')
+        # A plant's readings round as their own sensors do (display precision, firmware 0.56.0).
+        plant=tile['entity'].startswith('plant.')
         if tile['entity'] == ENERGY_TILE and hasattr(self.ha, 'request'):
             async def prefs():
                 try:
@@ -2645,7 +2667,7 @@ class Manager:
         week=features is not None and WEATHER_WEEK in features
         extra=extras(tile,states,forecast,getattr(self.ha,'time_zone',None),hourly,device=device,energy=self.energy_prefs() if tile['entity'] == ENERGY_TILE else None,
                      home_name=getattr(self.ha,'location_name','') if tile['entity'] == ENERGY_TILE else '',
-                     entries=self.registry_index() if light or (tile.get('options') or {}).get('display') == 'map' else None,words=getattr(self.ha,'state_words',None) if light else None,
+                     entries=self.registry_index() if light or plant or (tile.get('options') or {}).get('display') == 'map' else None,words=getattr(self.ha,'state_words',None) if light else None,
                      icon_of=row_icon if light else None,device_name=self.device_name_of(tile['entity']) if light else None,week=week)
         if tile['entity'].startswith('vacuum.'):
             ha_catalogue.chip_words(extra,tile['entity'],self.ha.states,device,getattr(self.ha,'state_words',None))

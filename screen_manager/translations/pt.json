@@ -1726,7 +1726,8 @@
         "screen": "Ecrã",
         "alarm_control_panel": "Alarme",
         "lock": "Fechaduras",
-        "humidifier": "Humidificadores"
+        "humidifier": "Humidificadores",
+        "plant": "Plantas"
       },
       "room": "Divisão",
       "hide_placed": "Ocultar adicionadas",
@@ -2149,7 +2150,8 @@
       "entity": "Entidade",
       "alarm_control_panel": "Painel de alarme",
       "lock": "Fechadura",
-      "humidifier": "Humidificador"
+      "humidifier": "Humidificador",
+      "plant": "Planta"
     },
     "displays": {
       "standard": "padrão",

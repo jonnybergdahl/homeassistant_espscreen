@@ -1548,6 +1548,29 @@
    },
    "keypad": null
   },
+  "plant": {
+   "firmware": "0.56.0",
+   "memory": {
+    "bytes": 640,
+    "extras": true
+   },
+   "key": true,
+   "features": {},
+   "actions": {},
+   "displays": [
+    {
+     "key": "standard"
+    }
+   ],
+   "controls": [],
+   "inline": null,
+   "toggle": null,
+   "taps": [],
+   "guards": [],
+   "picture": null,
+   "map": null,
+   "keypad": null
+  },
   "remote": {
    "firmware": "0.22.0",
    "memory": {

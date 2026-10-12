@@ -2236,6 +2236,126 @@ inline uint32_t vacuum_card_shape(const Tile &t){
   if(!vacuum_hero(t))add(vacuum_badge_text(t));
   return f.value;
 }
+// The plant card (firmware 0.56.0+, plant_card.h): under its status line the species and each reading with its icon and
+// value, the value red while the plant says it is too low or too high (Home Assistant's plant-status card, --error-color).
+// The room it was built for stays here, so its shape (plant_card_shape) asks the same question of a new value: a value
+// that no longer fits beside the other column builds the card again, every other one is painted in place.
+// And where its photo stands once the card is built, for the photo's paint.
+struct PlantRoom { int width=0, height=0; bool large=false; int photo=0, photo_x=0, photo_y=0; };
+inline PlantRoom plant_room;
+inline const lv_font_t *plant_text_font(bool large){return large?detail_font:(control_font?control_font:detail_font);}
+inline std::string plant_value(const plant_card::Reading &r){
+  return r.value.empty()?std::string(tr(txt::ha_unavailable)):screen_text::with_unit(screen_text::localize(r.value),r.unit);
+}
+inline plant_card::Layout plant_layout(const Tile &t){
+  const auto *data=t.extra().plant.get();
+  const lv_font_t *text=plant_text_font(plant_room.large),*icons=mini_icon_font?mini_icon_font:text;
+  plant_card::Input in;
+  in.width=plant_room.width;in.height=plant_room.height;
+  in.icon_w=in.icon_h=lv_font_get_line_height(icons);in.line_h=lv_font_get_line_height(text);
+  in.species_h=data&&!data->species.empty()?lv_font_get_line_height(detail_font):0;
+  in.gap=ui::px(plant_room.large?10:6);in.row_gap=ui::px(plant_room.large?12:6);in.column_gap=ui::column_gap();
+  if(data)for(const auto &r:data->readings)in.value_w.push_back(text_width(plant_value(r),text));
+  // The photo (firmware 0.56.0+) on a board that draws pictures, for a plant that has one: a cover the app makes, so
+  // never smaller than the app's least (48 px) nor larger than its most (media_card::Metrics::cover_max).
+  if(camera_supported()&&!t.extra().media_picture.empty()){
+    in.photo_max=std::min(media_card::Metrics::cover_max(),ui::px(plant_room.large?160:96));
+    in.photo_min=std::min(in.photo_max,std::max(48,ui::px(plant_room.large?96:64)));
+  }
+  return plant_card::place(in);
+}
+inline uint32_t plant_card_shape(const Tile &t){
+  Fingerprint f;f.add(t.entity);
+  const auto l=plant_layout(t);
+  const unsigned bits[4]={static_cast<unsigned>(l.columns),static_cast<unsigned>(l.cells.size()),l.species?1u:0u,static_cast<unsigned>(l.photo)};
+  f.write(reinterpret_cast<const uint8_t *>(bits),sizeof(bits));
+  if(const auto *data=t.extra().plant.get())for(const auto &r:data->readings)f.write(reinterpret_cast<const uint8_t *>(&r.icon),sizeof(r.icon));
+  return f.value;
+}
+inline void plant_value_paint(lv_obj_t *o,const Tile &t,const CardPart &part){
+  const auto *data=t.extra().plant.get();
+  if(!data||part.arg<0||static_cast<size_t>(part.arg)>=data->readings.size())return;
+  const auto &r=data->readings[part.arg];
+  label(o,plant_value(r));
+  set_color(o,LV_STYLE_TEXT_COLOR,plant_card::problem(r)?lv_color_hex(theme::foreground(theme::ha::RED)):theme::color(r.value.empty()?theme::MUTED:theme::INK));
+}
+// A left-column icon (firmware 0.56.0+): just before its value's words, which stand against a right edge. `part.value`
+// holds that edge and the room the value's label has ("x,room"); words wider than the room end in dots there.
+inline void plant_icon_paint(lv_obj_t *o,const Tile &t,const CardPart &part){
+  const auto *data=t.extra().plant.get();
+  if(!data||part.arg<0||static_cast<size_t>(part.arg)>=data->readings.size()||part.value.empty())return;
+  const lv_font_t *text=plant_text_font(plant_room.large),*icons=mini_icon_font?mini_icon_font:text;
+  const size_t comma=part.value.find(',');
+  if(comma==std::string::npos)return;
+  const int icon_w=lv_font_get_line_height(icons),gap=ui::px(plant_room.large?10:6);
+  const int right=std::atoi(part.value.c_str()),room=std::atoi(part.value.c_str()+comma+1);
+  const int words=std::min(text_width(plant_value(data->readings[part.arg]),text),room);
+  set_number(o,LV_STYLE_X,right-words-gap-icon_w);
+}
+// The plant's photo (firmware 0.56.0+): a cover the app cuts square for this card, its corners over the card's colour.
+// The card asks for it as the media card asks for a player's (media_card_cover, card_cover_want); until it is here, or
+// while the mark of a new photo waits for it, the flower stands in its place under it.
+inline void plant_photo_paint(lv_obj_t *o,const Tile &t,const CardPart &){
+#if LV_USE_IMAGE
+  const CoverAsk ask{t.entity,t.extra().media_picture,plant_room.photo,theme::hex(theme::PAGE)};
+  media_card_cover=ask.valid()?ask:CoverAsk{};
+  lv_image_dsc_t *src=ask.valid()?picture_of(cover_key(ask.entity,ask.mark,ask.size,ask.ground)):nullptr;
+  if(src&&!src->data)src=nullptr;
+  if(lv_image_get_src(o)!=src){
+    lv_image_set_src(o,src);
+    lv_obj_set_pos(o,plant_room.photo_x,plant_room.photo_y);lv_obj_set_size(o,plant_room.photo,plant_room.photo);
+  }
+  set_hidden(o,!src);
+#else
+  (void)o;(void)t;
+#endif
+}
+inline void plant_species_paint(lv_obj_t *o,const Tile &t,const CardPart &){
+  label(o,t.extra().plant?t.extra().plant->species:std::string());
+}
+inline void render_plant_detail(Tile &t,bool large,int width,int height,int pad,int top){
+  const lv_font_t *text=plant_text_font(large),*icons=mini_icon_font?mini_icon_font:text;
+  const int inner=width-2*pad,bottom=ui::px(large?18:8);
+  plant_room={inner,std::max(0,height-top-bottom),large};
+  const auto l=plant_layout(t);
+  const auto *data=t.extra().plant.get();
+  plant_room.photo=l.photo;plant_room.photo_x=pad+l.photo_x;plant_room.photo_y=top;
+#if LV_USE_IMAGE
+  // The photo's square: the flower on the card's track colour, and the photo over it once it is here. It draws into the
+  // media card's picture, which the picture store knows is on the glass (picture_shown), so it is never freed under it.
+  if(l.photo){
+    auto *frame=lv_obj_create(detail_root);lv_obj_remove_style_all(frame);
+    lv_obj_set_pos(frame,plant_room.photo_x,plant_room.photo_y);lv_obj_set_size(frame,l.photo,l.photo);
+    lv_obj_remove_flag(frame,LV_OBJ_FLAG_SCROLLABLE);lv_obj_remove_flag(frame,LV_OBJ_FLAG_CLICKABLE);
+    lv_obj_set_style_radius(frame,ui::px(large?16:10),0);
+    lv_obj_set_style_bg_color(frame,theme::color(theme::TRACK),0);lv_obj_set_style_bg_opa(frame,LV_OPA_COVER,0);
+    // The flower large where the big icon font has it and it fits, else at a tile's size.
+    const lv_font_t *glyphs=big_icon_font&&font_has(big_icon_font,icon_for(t))&&lv_font_get_line_height(big_icon_font)<l.photo?big_icon_font
+                            :widgets[0].icon_font?widgets[0].icon_font:detail_font;
+    detail_text(frame,icon_for(t),0,(l.photo-lv_font_get_line_height(glyphs))/2,l.photo,glyphs,LV_TEXT_ALIGN_CENTER,theme::MUTED);
+    media_detail_picture=lv_image_create(detail_root);lv_obj_remove_flag(media_detail_picture,LV_OBJ_FLAG_CLICKABLE);
+    lv_obj_add_flag(media_detail_picture,LV_OBJ_FLAG_HIDDEN);
+    card_bind(media_detail_picture,t,plant_photo_paint);
+  }
+#endif
+  if(l.species)card_bind(detail_text(detail_root,"",pad,top+l.species_y,inner,detail_font,LV_TEXT_ALIGN_CENTER,theme::MUTED),t,plant_species_paint);
+  const int gap=ui::px(large?10:6),icon_w=lv_font_get_line_height(icons);
+  // Each reading is its icon and its value. The left column's stand against the middle of the card (plant_card::Cell::end):
+  // the value right-aligned there, and its icon painted just before the value's words (plant_icon_paint), so the pair
+  // stays together when a new value is wider or narrower. Elsewhere the icon starts the cell and the value follows it.
+  for(size_t i=0;data&&i<l.cells.size();++i){
+    const auto &c=l.cells[i];const auto &r=data->readings[i];
+    const int x=pad+c.x,y=top+c.y,room=c.w-icon_w-gap;
+    if(r.icon){
+      auto *icon=detail_text(detail_root,tile_icon::utf8(r.icon),x,y+(c.h-lv_font_get_line_height(icons))/2,icon_w,icons,LV_TEXT_ALIGN_CENTER,theme::MUTED);
+      // The right edge the pair stands against, for the icon's paint; none for a cell that starts at its left.
+      if(c.end)card_bind(icon,t,plant_icon_paint,std::to_string(x+c.w)+","+std::to_string(room),static_cast<intptr_t>(i));
+    }
+    card_bind(detail_text(detail_root,"",x+icon_w+gap,y+(c.h-lv_font_get_line_height(text))/2,room,text,c.end?LV_TEXT_ALIGN_RIGHT:LV_TEXT_ALIGN_LEFT,theme::INK),
+              t,plant_value_paint,"",static_cast<intptr_t>(i));
+  }
+  card_shaped(t,plant_card_shape);
+}
 inline void render_vacuum_detail(Tile &t,bool large,int width,int height,int pad){
   uint32_t now=esphome::millis();
   auto rows=tile_controls::vacuum_rows(t,now);
@@ -5330,6 +5450,10 @@ inline void show_detail(unsigned index){
     card_bind(lv_obj_get_child(start,0),t,[](lv_obj_t *o,const Tile &t,const CardPart &){label(o,tr(t.state=="active"?txt::timer_pause:txt::timer_start));});
     detail_button(tr(txt::timer_cancel),pad+cw+gap,top+(ui::px(large?50:30)),cw,bh,41);
     card_shaped(t,entity_shape);
+  }else if(d=="plant"){
+    // Under Home Assistant's OK or Problem: the species and the readings (firmware 0.56.0+).
+    const int below=ui::px(large?80:50)+lv_font_get_line_height(detail_font)+ui::px(large?16:8);
+    render_plant_detail(t,large,width,height,pad,below);
   }else if(d=="sun"){
     card_bind(detail_label(detail_root,"",pad,top,width-2*pad),t,[](lv_obj_t *o,const Tile &t,const CardPart &){
       label(o,fill(txt::sun_sunrise,"time",screen_text::clock_text(t.extra().sunrise,screen_settings::current.clock_24h!=0)));});
@@ -5433,6 +5557,8 @@ inline const char *icon_for(const Tile &tile) {
   if (d == "sun") return tile.state == "above_horizon" ? "\U000F059B" : "\U000F059C";
   if (d == "timer") return "\U000F051B";
   if (d == "person") return "\U000F0004";
+  // Home Assistant's plant icon (frontend data/icons.ts, firmware 0.56.0+).
+  if (d == "plant") return "\U000F024A";
   // The map tile's marker (firmware 0.21.0) only shows while its picture is on its way.
   if (d == "screen") return tile.is_settings() ? "\U000F0493" : tile.is_page() ? "\U000F0054" : tile.entity == "screen.map" ? "\U000F034E" : tile.is_energy() ? "\U000F140B" : "\U000F0150";
   if (d == "camera" || d == "image") return "\U000F07AE";

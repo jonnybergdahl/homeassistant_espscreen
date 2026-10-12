@@ -1725,7 +1725,8 @@
         "screen": "Screen",
         "alarm_control_panel": "Alarm",
         "lock": "Locks",
-        "humidifier": "Humidifiers"
+        "humidifier": "Humidifiers",
+        "plant": "Plants"
       },
       "room": "Room",
       "hide_placed": "Hide placed",
@@ -1788,7 +1789,8 @@
       "entity": "Entity",
       "alarm_control_panel": "Alarm panel",
       "lock": "Lock",
-      "humidifier": "Humidifier"
+      "humidifier": "Humidifier",
+      "plant": "Plant"
     },
     "displays": {
       "standard": "standard",

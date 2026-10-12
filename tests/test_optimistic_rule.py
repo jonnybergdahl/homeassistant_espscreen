@@ -56,7 +56,8 @@ class CardParts(unittest.TestCase):
                   'render_light_detail': 'light_card_shape', 'render_cover_detail': 'cover_card_shape',
                   'render_select_detail': 'select_card_shape', 'render_remote_detail': 'select_card_shape', 'render_vacuum_detail': 'vacuum_card_shape',
                   'render_lock_detail': 'security_card_shape', 'render_alarm_detail': 'security_card_shape',
-                  'render_weather_detail': 'picture_card_shape', 'render_history_detail': 'picture_card_shape'}
+                  'render_weather_detail': 'picture_card_shape', 'render_history_detail': 'picture_card_shape',
+                  'render_plant_detail': 'plant_card_shape'}
         for card in re.findall(r'^inline void (render_[a-z]+_detail)\(', TILES, re.M):
             self.assertIn(card, shapes, f'{card} is a card without a shape (docs/CARD_PARTS.md)')
         for card, shape in shapes.items():

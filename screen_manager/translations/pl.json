@@ -1726,7 +1726,8 @@
         "screen": "Ekran",
         "alarm_control_panel": "Alarm",
         "lock": "Zamki",
-        "humidifier": "Nawilżacze"
+        "humidifier": "Nawilżacze",
+        "plant": "Rośliny"
       },
       "room": "Obszar",
       "hide_placed": "Ukryj dodane",
@@ -2149,7 +2150,8 @@
       "entity": "Encja",
       "alarm_control_panel": "Panel alarmowy",
       "lock": "Zamek",
-      "humidifier": "Nawilżacz"
+      "humidifier": "Nawilżacz",
+      "plant": "Roślina"
     },
     "displays": {
       "standard": "standardowy",

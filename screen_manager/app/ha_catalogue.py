@@ -270,7 +270,7 @@ def unsupported(tile, previous, caps):
 
 # Domains whose tiles and cards show the raw state where no word of the screen's own fits (app 0.2.67): the app sends
 # Home Assistant's word for it. The screen's own words (On, Off, Docked, a binary sensor's Open) stay as they are.
-WORD_DOMAINS = frozenset(('cover', 'media_player', 'vacuum', 'select', 'input_select', 'sensor'))
+WORD_DOMAINS = frozenset(('cover', 'media_player', 'vacuum', 'select', 'input_select', 'sensor', 'plant'))
 WORD_BYTES = 32
 
 

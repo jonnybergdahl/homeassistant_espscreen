@@ -551,6 +551,11 @@
    "enum": null,
    "features": {}
   },
+  "plant": {
+   "actions": {},
+   "enum": null,
+   "features": {}
+  },
   "remote": {
    "actions": {
     "delete_command": [],

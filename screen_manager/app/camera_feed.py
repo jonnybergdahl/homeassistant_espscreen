@@ -33,7 +33,8 @@ MIN_FIRMWARE = (0, 2, 57)
 # at the size the screen asks for, with the rounded corners baked in over the colour the screen names (the card's
 # page or the tile's own colour), so the screen draws it as it is. A cover is fetched when the screen loads its link
 # and again only when Home Assistant's picture changes; the screen asks for a new link then.
-COVER_DOMAINS = ('media_player',)
+# A plant's photo (firmware 0.56.0+) is served as a cover too: its entity_picture, square, on the plant card.
+COVER_DOMAINS = ('media_player', 'plant')
 COVER_MIN_FIRMWARE = (0, 2, 64)
 COVER_SIZES = (48, 320)  # the smallest and largest cover a screen may ask for, in pixels
 COVER_RADIUS_SHARE = 12  # the corner is a twelfth of the size, at least 4 px (media_card.h radius_for)

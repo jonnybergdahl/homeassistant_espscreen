@@ -185,6 +185,8 @@ inline uint32_t accent(const Tile &t) {
   if (d == "fan") return CYAN;
   // A humidifier is Home Assistant's blue while it is on (--state-humidifier-on-color), drying or humidifying alike.
   if (d == "humidifier") return BLUE;
+  // A plant with a problem is Home Assistant's red (--state-plant-active-color, firmware 0.56.0+).
+  if (d == "plant") return RED;
   if (d == "cover" || d == "scene") return PURPLE;
   if (d == "media_player") return LIGHT_BLUE;
   if (d == "select" || d == "input_select") return INDIGO;
@@ -902,7 +904,9 @@ inline bool runtime_card_domain(const std::string &d) {
          d == "timer" || d == "climate" || d == "humidifier" || d == "alarm_control_panel" ||
          // A remote opens its card, as Home Assistant's tile card opens its dialog: the power key and its activities
          // (firmware 0.22.0+). The tap option `toggle` switches it instead.
-         d == "remote";
+         d == "remote" ||
+         // A plant opens its readings (firmware 0.56.0+), as Home Assistant's tile opens its more-info.
+         d == "plant";
 }
 // Whether a light offers a colour or a colour temperature, and so opens the colour card instead of the card
 // with the brightness slider. The modes come from Home Assistant as one string (`supported_color_modes`) and

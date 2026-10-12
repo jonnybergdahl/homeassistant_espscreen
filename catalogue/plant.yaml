@@ -1,0 +1,14 @@
+# Plant. Home Assistant: homeassistant/components/plant, and the custom integration that replaces it under the same
+# domain (github.com/Olen/homeassistant-plant).
+# Home Assistant's own facts for it (flags, actions) come from its source: catalogue/_ha.json (tools/read_ha_source.py).
+# docs/CATALOGUE.md says what every key means.
+#
+# A plant has no action: its state is ok or problem, and its tile says which, red while it has a problem as Home
+# Assistant's frontend colours it. The card a tap opens shows its photo (entity_picture, as a cover: docs/CAMERA.md),
+# the species and each reading with its icon and value, red while it is too low or too high, as Home Assistant's
+# plant-status card shows them and in the order of the flower card (Olen's lovelace-flower-card) for Olen's plant. The add-on gathers the readings of both (core.plant_extras).
+domain: plant
+firmware: 0.56.0
+memory: {bytes: 640, extras: true}
+displays:
+  standard: {}

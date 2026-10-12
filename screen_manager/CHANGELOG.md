@@ -1,3 +1,12 @@
+## Unreleased
+
+- **Plants as tiles.** A plant from Home Assistant's own plant integration, or from the custom
+  [plant integration](https://github.com/Olen/homeassistant-plant) that replaces it, can be a tile. The tile says OK or
+  Problem and turns red while the plant has a problem, as in Home Assistant. A tap opens its card with the species and
+  the readings the plant has a sensor for (soil moisture, conductivity, temperature, light, air humidity, daily light
+  integral), each with its icon and value, the value red while the plant says it is too low or too high. On a screen
+  that shows camera pictures, the card has the plant's photo above them. Update the screen to show one.
+
 ## 0.4.87 (firmware 0.55.0)
 
 - **Plugins for everyone.** The Plugins page is now in every Tessera app, not only the dev app: add a tile, a top bar

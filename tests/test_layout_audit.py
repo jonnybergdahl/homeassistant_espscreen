@@ -126,6 +126,12 @@ KINDS = {
                                     'supported_features': 8321599}},
     'number': {'entity': 'number.audit', 'state': '55', 'attributes': {'min': 30, 'max': 70, 'step': 5, 'unit_of_measurement': '%'}},
     'person': {'entity': 'person.audit', 'state': 'home', 'attributes': {}},
+    # A plant with a problem (firmware 0.56.0): Home Assistant's own plant, its readings as attributes.
+    'plant': {'entity': 'plant.audit', 'state': 'problem',
+              'attributes': {'problem': 'moisture low, conductivity high', 'moisture': 12, 'temperature': 21.4, 'conductivity': 3400,
+                             'brightness': 15300, 'battery': 47,
+                             'unit_of_measurement_dict': {'moisture': '%', 'temperature': '°C', 'conductivity': 'µS/cm',
+                                                          'brightness': 'lx', 'battery': '%'}}},
     'person-away': {'entity': 'person.away', 'state': 'A place with a very long name far from home', 'attributes': {}},
     # A remote (firmware 0.22.0): the activity it runs is its second line, long names included.
     'remote': {'entity': 'remote.audit', 'state': 'on',

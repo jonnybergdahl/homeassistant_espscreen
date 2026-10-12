@@ -106,7 +106,7 @@ DOMAIN_ICONS = {
     'zone': 'account-group', 'lock': 'lock', 'alarm_control_panel': 'shield-home', 'timer': 'timer-outline', 'counter': 'gauge',
     'event': 'bell-ring', 'input_datetime': 'calendar', 'input_text': 'script-text', 'water_heater': 'water-boiler',
     'humidifier': 'air-humidifier', 'select': 'cog', 'input_select': 'cog', 'number': 'gauge', 'input_number': 'gauge',
-    'sensor': 'gauge', 'binary_sensor': 'gauge',
+    'sensor': 'gauge', 'binary_sensor': 'gauge', 'plant': 'flower',
 }
 # Their state is the moment they last ran or fired: the bar shows how long ago.
 MOMENT_DOMAINS = frozenset(['scene', 'button', 'input_button', 'event'])
@@ -238,6 +238,9 @@ def active(entity, state):
         return False
     if domain in ('person', 'device_tracker'):
         return raw == 'home'
+    # A plant is active only while it has a problem (Home Assistant's state_active.ts).
+    if domain == 'plant':
+        return raw == 'problem'
     if domain in MOMENT_DOMAINS or domain in ('weather', 'sun') and raw != 'below_horizon':
         return True
     number = numeric(raw)
@@ -270,6 +273,9 @@ def accent(entity, state):
         return BLUE
     if domain == 'vacuum' and raw == 'cleaning':
         return TEAL
+    # A plant is active while it has a problem, in Home Assistant's red (--state-plant-active-color).
+    if domain == 'plant' and raw == 'problem':
+        return RED
     return None
 
 def auto_icon(entity, state, entry=None):

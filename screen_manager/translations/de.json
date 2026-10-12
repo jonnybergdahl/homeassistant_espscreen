@@ -1726,7 +1726,8 @@
         "screen": "Bildschirm",
         "alarm_control_panel": "Alarm",
         "lock": "Schlösser",
-        "humidifier": "Luftbefeuchter"
+        "humidifier": "Luftbefeuchter",
+        "plant": "Pflanzen"
       },
       "room": "Bereich",
       "hide_placed": "Platzierte ausblenden",
@@ -2149,7 +2150,8 @@
       "entity": "Entität",
       "alarm_control_panel": "Alarmanlage",
       "lock": "Schloss",
-      "humidifier": "Luftbefeuchter"
+      "humidifier": "Luftbefeuchter",
+      "plant": "Pflanze"
     },
     "displays": {
       "standard": "Standard",

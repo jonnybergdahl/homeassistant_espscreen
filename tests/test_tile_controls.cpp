@@ -215,6 +215,15 @@ int main() {
   dry.controls = "toggle"; assert(panel_available(dry) && key_action(dry, TOGGLE).service == "humidifier.turn_off");
   dry.controls = "setpoint_mode"; assert(climate_modes_selected(dry) && panel_kind(dry) == "setpoint");
   assert(tap_route(dry, false).route == TapRoute::CARD);
+  // A plant (firmware 0.56.0): a tap or a hold opens its readings, it has nothing to switch; Home Assistant's red only
+  // while it has a problem, grey while it is fine.
+  {
+    Tile plant = make("plant.fern", "problem");
+    assert(tap_route(plant, false).route == TapRoute::CARD && tap_route(plant, true).route == TapRoute::CARD);
+    assert(plant.active() && accent(plant) == theme::ha::RED);
+    plant.state = "ok";
+    assert(!plant.active());
+  }
   // Off: Home Assistant reports the action off, the line says so with the humidity it measures.
   Tile off = dry; off.state = "off"; off.edit_extra().hvac_action = "off";
   assert(climate_off(off) && climate_card_status(off, true) == "Off · 68%" && key_action(off, TOGGLE).service == "humidifier.turn_on");
