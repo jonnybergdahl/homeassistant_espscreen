@@ -1,0 +1,90 @@
+# ESP Screens - Guition JC4827W543C board: a 4.3-inch 480 x 272 panel (NV3041A over QSPI, ESPHome's mipi_spi model
+# JC4827W543) with GT911 capacitive touch over I2C, on an ESP32-S3 with 4MB flash and 8MB octal PSRAM (N4R8).
+# The manufacturer's JC4827W543R has resistive touch and JC4827W543N none; this file is only for the C.
+#
+# The same QSPI panel bus as the JC3248W535 (guition-jc3248w535.yaml), but 4 MB of flash: the wide update slots of
+# hardware/flash-4mb.yaml, the compact look, and the bedside clock with the display step, as on the CYD.
+#
+# A board file is the board's hardware, the facts the shared tree takes from it (its glass and its grid), and the
+# features it has; docs/PROFILES.md says how the files of a screen fit together, docs/ADDING_A_BOARD.md how a board
+# is added. Two entry files include this one: checkout/jc4827w543.yaml (a build on this computer) and
+# packages/jc4827w543.yaml (the package a screen builds from over GitHub).
+packages:
+  hardware: !include ../hardware/guition-esp32s3-qspi.yaml
+  # Wide update slots for 4 MB of flash, and the way a screen that is out there gets them.
+  flash: !include ../hardware/flash-4mb.yaml
+  # The compact look, as on the CYD: the standard look's letters at this density cost 80 KB more of font bitmaps,
+  # which took the image to 97.6 % of its update slot. Its letters keep the CYD's size in millimetres.
+  look: !include ../looks/compact.yaml
+  touch: !include ../features/capacitive-touch.yaml
+  backlight: !include ../features/backlight.yaml
+  camera: !include ../features/camera.yaml
+  self_test: !include ../features/self-test.yaml
+
+substitutions:
+  # The key of this board file; the firmware reports it so ESP Screens knows what board a screen is.
+  BOARD_ID: "jc4827w543"
+  DEVICE_NAME: "jc4827w543-new"
+  DEVICE_FRIENDLY_NAME: "My Guition 4.3"
+  # The bedside clock draws with the display step: digits of its own cost flash a 4 MB board does not have to spare
+  # (looks/shared/digits.yaml).
+  BEDSIDE_OWN_DIGITS: "0"
+
+  # The glass: the panel's own pixels and its density, 552 diagonal pixels over 4.3 inches. The panel lies down as it
+  # is, so no LVGL angle is needed for that; standing up is a quarter further.
+  PANEL_W: "480"
+  PANEL_H: "272"
+  DISPLAY_DPI: "128.305"
+  # The tile grid: columns and rows of cells lying down, and standing up.
+  GRID_COLS: "2"
+  GRID_ROWS: "2"
+  GRID_COLS_PORTRAIT: "1"
+  GRID_ROWS_PORTRAIT: "4"
+  # More tiles and pages than the 64 and eight of a board without PSRAM (firmware 0.34.0+): the tile list, the cards and the
+  # extras live in PSRAM here, and the memory budget (tile_memory.h) says how many of them a layout really takes.
+  SCREEN_MAX_TILES: "128"
+  SCREEN_MAX_PAGES: "24"
+  LVGL_BUFFER_SIZE: "25%"                       # LVGL's draw buffer as a share of the screen (33 KB)
+
+  # The backlight's PWM on GPIO1 (see the output block), as on the other Guition boards with a QSPI panel.
+  BACKLIGHT_FREQUENCY: "1000Hz"
+
+# ============================================================
+# No need to edit below this line.
+# ============================================================
+
+# The chip, its PSRAM, the panel bus and the backlight are hardware/guition-esp32s3-qspi.yaml; this is its flash.
+esp32:
+  flash_size: 4MB
+
+# The GT911, at 0x5D.
+i2c:
+  id: touch_bus
+  sda: GPIO8
+  scl: GPIO4
+  frequency: 400kHz
+
+touchscreen:
+  - platform: gt911
+    id: ts_touch
+    i2c_id: touch_bus
+    display: my_display
+    interrupt_pin: GPIO3
+    reset_pin: GPIO38
+    update_interval: 20ms
+    # The GT911 reports pixels of the panel lying down. Without this range ESPHome reads it from the chip's own
+    # configuration, which some panels ship with another size (GitHub #78, on the 4-inch Guition).
+    calibration:
+      x_min: 0
+      x_max: 480
+      y_min: 0
+      y_max: 272
+
+# ESPHome's model carries the init sequence, the size, the colour order, chip select and the data rate (20 MHz).
+display:
+  - platform: mipi_spi
+    id: my_display
+    model: JC4827W543
+    spi_id: lcd
+    update_interval: never
+    auto_clear_enabled: false

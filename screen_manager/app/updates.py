@@ -396,7 +396,8 @@ class Updater:
 
         A screen that already says "widen" gets the table first, from the firmware it runs. A screen that still has
         ESPHome's table and no way to change it (firmware from before the component) cannot take a firmware larger than that
-        table's slot: it goes over its bridge. Anything else installs as every screen does."""
+        table's slot: it goes over its bridge, on a board the bridge is built for (Firmware.bridgeable). Anything else
+        installs as every screen does."""
         firmware = self.manager.firmware
         if not await self.job(profile, 'build'):
             return False
@@ -407,7 +408,8 @@ class Updater:
         if word == 'widen':
             if not await self.send_table(inbox, profile, host):
                 return False
-        elif word != 'wide' and (firmware.image_size(profile) or 0) > firmware.NARROW_SLOT:
+        elif (word != 'wide' and (firmware.image_size(profile) or 0) > firmware.NARROW_SLOT
+              and getattr(firmware, 'bridgeable', lambda _: True)(profile)):
             return await self.over_bridge(inbox, profile, host)
         return await self.job(profile, 'install', host)
 

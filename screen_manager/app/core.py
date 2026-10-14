@@ -2635,9 +2635,21 @@ def alert_service(node, action='show_alert'):
 
 def limit_boards():
     """{look: the catalog's names of the boards with that look} (boards.json), so whatever shows the alert limits
-    says whose limit is whose without naming a board itself."""
-    return {look: list(dict.fromkeys(SHAPES[board].get('catalog', {}).get('name', board) for board in BOARD_KEYS
-                                     if SHAPES[board].get('look') == look)) for look in ALERT_LIMITS}
+    says whose limit is whose without naming a board itself. A name with boards of more than one look (the Guition
+    JC4827W543 has the compact look, the other Guitions the standard one) stands alone where most of its boards are, and
+    with each board's model in the other looks."""
+    def name(board):
+        return SHAPES[board].get('catalog', {}).get('name', board)
+    looks = {}
+    for board in BOARD_KEYS:
+        looks.setdefault(name(board), []).append(SHAPES[board].get('look'))
+    main = {each: max(dict.fromkeys(found), key=found.count) for each, found in looks.items()}
+
+    def label(board):
+        catalog = SHAPES[board].get('catalog', {})
+        return name(board) if main[name(board)] == SHAPES[board].get('look') else f"{name(board)} {catalog.get('model', board)}"
+    return {look: list(dict.fromkeys(label(board) for board in BOARD_KEYS if SHAPES[board].get('look') == look))
+            for look in ALERT_LIMITS}
 
 def alert_reference():
     """Everything the Alerts cheatsheet shows besides the screens themselves, in the editor's language (app 0.2.90)."""

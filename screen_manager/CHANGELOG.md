@@ -1,3 +1,9 @@
+## Unreleased
+
+- **A new board, experimental: the Guition JC4827W543C.** A 4.3-inch ESP32-S3 with 480 x 272 QSPI glass, GT911
+  touch, 4 MB of flash and 8 MB of PSRAM, so it shows camera pictures and dims. Only the capacitive C variant. Choose
+  it under New screen.
+
 ## 0.4.87 (firmware 0.55.0)
 
 - **Plugins for everyone.** The Plugins page is now in every Tessera app, not only the dev app: add a tile, a top bar

@@ -173,3 +173,9 @@ crowpanel101:
   # member ran it on (GitHub #116).
   # Its extras under Screen settings, in this order (docs/SETTINGS.md, "A board's own settings").
   settings: [media_player, microphone]
+
+jc4827w543:
+  file: guition-jc4827w543.yaml
+  name: Guition
+  model: JC4827W543
+  status: experimental

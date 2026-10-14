@@ -29,7 +29,9 @@ external_components:
 esphome:
   min_version: 2026.6.2
 
-# Every board with 4 MB of flash is a plain ESP32 (tests/test_flash_layout.py holds them to it).
+# Every board with 4 MB of flash that a screen with ESPHome's own table can be is a plain ESP32 (tests/test_flash_layout.py
+# holds them to it); the JC4827W543, an ESP32-S3, had the wide table from its first firmware and is never bridged
+# (Firmware.bridgeable).
 esp32:
   board: esp32dev
   variant: esp32

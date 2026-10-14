@@ -525,6 +525,15 @@ class Firmware:
         meta = self.profile_names().get(self.profile(name).name) or {}
         return bool(SHAPES.get(meta.get('package') or '', {}).get('wide_slots'))
 
+    def bridgeable(self, name):
+        """Whether this profile's screen can go over the bridge: a board with the wide table whose chip is a plain ESP32,
+        the chip packages/bridge.yaml is built for. A board of another chip (the JC4827W543, an ESP32-S3) took the wide
+        table with its first firmware and never had a screen with ESPHome's own: its firmware is larger than that
+        table's slot, so no update could have reached one."""
+        meta = self.profile_names().get(self.profile(name).name) or {}
+        shape = SHAPES.get(meta.get('package') or '', {})
+        return bool(shape.get('wide_slots')) and shape.get('chip') == 'ESP32'
+
     def allow_table_update(self, name):
         """Let the screen's next build take a partition table over Wi-Fi (app 0.4.56): `allow_partition_access: true` in
         the `platform: esphome` item of the profile's own `ota:`, as a new screen's YAML has it (core.installation_yaml).
@@ -604,7 +613,7 @@ class Firmware:
         screen is simply away for the minute this takes. A profile that keeps one of those blocks somewhere else (an
         include) cannot be bridged, and says so."""
         profile = self.profile(name)
-        if profile.name.endswith(self.BRIDGE_SUFFIX) or not self.wide_slots(profile.name):
+        if profile.name.endswith(self.BRIDGE_SUFFIX) or not self.bridgeable(profile.name):
             raise ValueError(t('addon.errors.firmware.choose_profile'))
         text = profile.read_bytes().decode('utf-8').replace('\r\n', '\n')
         if not text.endswith('\n'):

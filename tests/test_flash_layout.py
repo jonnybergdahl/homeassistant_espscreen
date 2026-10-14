@@ -34,6 +34,10 @@ MB4 = 4 * 1024 * 1024
 ESPHOME_TABLE = {'otadata': (0x9000, 0x2000), 'phy_init': (0xB000, 0x1000), 'app0': (0x10000, 0x1C0000),
                  'app1': (0x1D0000, 0x1C0000), 'nvs': (0x390000, 0x70000)}
 WIDE_BOARDS = sorted(board for board in profiles.BOARDS if profiles.wide_slots(board))
+# Boards with 4 MB of flash whose first firmware already took the wide table: their image is larger than the slot of
+# ESPHome's own table, so no screen of them can have that table with Tessera's firmware, and the bridge (a plain ESP32)
+# would not run on their chip.
+BORN_WIDE = ['jc4827w543']
 
 
 def load(text):
@@ -138,11 +142,14 @@ class TheBoards(unittest.TestCase):
             self.assertNotIn('flash_layout', path.read_text(), path.name)
 
     def test_one_bridge_fits_them_all(self):
-        """The bridge is built for a plain ESP32; every board that takes the wide table is one."""
+        """The bridge is built for a plain ESP32; every board that takes the wide table is one, but for the boards that
+        had it from their first firmware (BORN_WIDE), which are never bridged (Firmware.bridgeable)."""
+        self.assertEqual(BORN_WIDE, [board for board in WIDE_BOARDS if SHAPES[board]['chip'] != 'ESP32'])
         for board in WIDE_BOARDS:
             blocks = [load(path.read_text()).get('esp32') or {} for path in profiles.chain(profiles.BOARDS[board])]
-            self.assertIn('esp32dev', [block.get('board') for block in blocks], board)
-            self.assertIn('esp32', [str(block.get('variant')).lower() for block in blocks], board)
+            plain = 'esp32dev' in [block.get('board') for block in blocks]
+            self.assertEqual(plain, board not in BORN_WIDE, board)
+            self.assertEqual('esp32' in [str(block.get('variant')).lower() for block in blocks], plain, board)
         for name in ('packages/bridge.yaml', 'checkout/bridge.yaml'):
             bridge = load((ROOT / name).read_text())
             self.assertNotIn('api', bridge, f'{name}: Home Assistant removes the entities a device stops offering')
@@ -342,6 +349,7 @@ class TheBridge(unittest.TestCase):
     def test_a_profile_it_cannot_bridge_says_so(self):
         cases = {
             'a board with more flash': OLD.replace('BOARD', 'guition'),
+            'a board of another chip': OLD.replace('BOARD', 'jc4827w543'),
             'wifi somewhere else': OLD.replace('BOARD', 'cyd').replace('wifi:\n  ssid: !secret wifi_ssid\n  password: !secret wifi_password\n  power_save_mode: none\n', 'wifi: !include wifi.yaml\n'),
             'no name': OLD.replace('BOARD', 'cyd').replace('  name: "kitchen"\n', ''),
         }
@@ -428,9 +436,11 @@ class FakeFirmware:
         self.screen, self.calls, self.task, self.job, self.bridges, self.bridge_size = screen, [], None, None, set(), bridge_size
         self.names = {'living-room.yaml': {'node': 'living-room', 'friendly': 'Living room', 'package': 'packages/cyd.yaml'}}
         self.fail = set()
+        self.can_bridge = True
 
     def profile_names(self): return self.names
     def wide_slots(self, name): return True
+    def bridgeable(self, name): return self.can_bridge
     def image_size(self, name): return self.bridge_size if name.endswith('.bridge.yaml') else self.screen.size
 
     def bridge(self, name):
@@ -557,6 +567,15 @@ class TheUpdater(unittest.IsolatedAsyncioTestCase):
             self.assertEqual(m.updates.bridging, {})
             self.assertEqual(m.firmware.bridges, set(), 'the bridge is removed again')
             self.assertNotIn('bridging', json.loads((Path(tmp) / 'updates.json').read_text()))
+
+    async def test_a_board_the_bridge_is_not_built_for_is_never_bridged(self):
+        with tempfile.TemporaryDirectory() as tmp:
+            m = self.manager(tmp, size=1_900_000, slot=1)
+            m.firmware.can_bridge = False
+            state, calls = await self.update(m)
+            self.assertNotIn(('bridge', 'build'), calls)
+            self.assertEqual(calls[:2], [('firmware', 'build'), ('firmware', 'install')])
+            self.assertEqual(m.firmware.bridges, set())
 
     async def test_on_a_slow_flash_chip_the_bridge_moves_to_its_first_slot(self):
         with tempfile.TemporaryDirectory() as tmp:

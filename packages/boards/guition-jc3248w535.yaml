@@ -10,7 +10,7 @@
 # is added. Two entry files include this one: checkout/jc3248w535.yaml (a build on this computer) and
 # packages/jc3248w535.yaml (the package a screen builds from over GitHub).
 packages:
-  build: !include ../hardware/esp-idf.yaml
+  hardware: !include ../hardware/guition-esp32s3-qspi.yaml
   look: !include ../looks/standard.yaml
   touch: !include ../features/capacitive-touch.yaml
   backlight: !include ../features/backlight.yaml
@@ -49,23 +49,9 @@ substitutions:
 # No need to edit below this line.
 # ============================================================
 
+# The chip, its PSRAM, the panel bus and the backlight are hardware/guition-esp32s3-qspi.yaml; this is its flash.
 esp32:
-  board: esp32-s3-devkitc-1
-  variant: esp32s3
   flash_size: 16MB
-  cpu_frequency: 240MHz
-
-# ESPHome's JC3248W535 model requires PSRAM: the panel is driven from a frame in it.
-psram:
-  mode: octal
-  speed: 80MHz
-
-# The panel's bus: four data lines. Chip select (GPIO45) comes with ESPHome's model.
-spi:
-  id: lcd
-  type: quad
-  clk_pin: GPIO47
-  data_pins: [GPIO21, GPIO48, GPIO40, GPIO39]
 
 # The touch half of the AXS15231B, at 0x3B.
 i2c:
@@ -73,14 +59,6 @@ i2c:
   sda: GPIO4
   scl: GPIO8
   frequency: 400kHz
-
-output:
-  - platform: ledc
-    pin: GPIO1
-    id: gpio_backlight_pwm
-    frequency: ${BACKLIGHT_FREQUENCY}
-    min_power: 0.01
-    zero_means_zero: true
 
 # No interrupt line: polled, as in the configuration from GitHub #54.
 touchscreen:

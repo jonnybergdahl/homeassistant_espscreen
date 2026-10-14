@@ -1,0 +1,31 @@
+# ESP Screens - a Guition ESP32-S3 board with octal PSRAM and a QSPI panel, for a board file that includes this one.
+#
+# The chip, its memory, the panel's four-line bus and the backlight on GPIO1, which the JC3248W535 and the JC4827W543
+# share. The board file adds its flash size (`esp32: flash_size:`), its BACKLIGHT_FREQUENCY, its touch and its panel
+# (ESPHome's mipi_spi model, which brings chip select on GPIO45 and needs the PSRAM: the panel is driven from a frame
+# in it).
+packages:
+  build: !include esp-idf.yaml
+
+esp32:
+  board: esp32-s3-devkitc-1
+  variant: esp32s3
+  cpu_frequency: 240MHz
+
+psram:
+  mode: octal
+  speed: 80MHz
+
+spi:
+  id: lcd
+  type: quad
+  clk_pin: GPIO47
+  data_pins: [GPIO21, GPIO48, GPIO40, GPIO39]
+
+output:
+  - platform: ledc
+    pin: GPIO1
+    id: gpio_backlight_pwm
+    frequency: ${BACKLIGHT_FREQUENCY}
+    min_power: 0.01
+    zero_means_zero: true
